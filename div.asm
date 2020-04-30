@@ -1,11 +1,10 @@
-dat segment
-dat ends  
+
 
 cod segment para public 'code'
 start:
 overlay proc far
 
-assume cs:cod,ds:dat
+assume cs:cod
 
 jmp startMul
 setOverflow: 

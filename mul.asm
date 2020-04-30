@@ -1,7 +1,4 @@
-dat segment
-
-dat ends  
-
+ 
 cod segment para public 'code'
 
 overlay proc far
