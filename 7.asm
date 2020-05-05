@@ -8,23 +8,29 @@ ZSEG ENDS
 .data
 string db 250 dup (?)   
 strSize db ?   
-flagIteration db 0
+flagIteration db 0 
+
 overlay_seg dw ?
 overlay_off dw ? 
 code_seg dw ?   
+
 flagNegWrite db ? 
 flagNegNumber db ?
-flagNegZero  db ?  
+flagNegZero  db ? 
+ 
 beginNum dw ?       
-beginExp dw ?
+beginExp dw ? 
+
 pathToTheAdd db "add.exe",0  
 pathToTheSub db "sub.exe",0
 pathToTheMul db "mul.exe",0
-pathToTheDiv db "div.exe",0   
+pathToTheDiv db "div.exe",0    
+
 errorMessage db "Error commmand line argument$" 
 errorChangeMemory db "error change memory$"  
 errorAllocMemory db "error alloc memory$"
-overflowMessage db "overflow$"
+overflowMessage db "overflow$"   
+resultMessage db "result$"
 
 number dw ?
 countMul db ?  
@@ -49,28 +55,28 @@ start:
     jc errorSetMemoryForProgramm
     jmp setMemoryForOverlay
     
-    errorSetMemoryForProgramm:
+errorSetMemoryForProgramm:
     mov ah,9
     lea dx,errorChangeMemory
     int 21h
     mov ah,4ch
     int 21h
     
-    setMemoryForOverlay:  
+setMemoryForOverlay:  
     mov bx,100h
     mov ah,48h
     int 21h        
     jc errorGetMemoryForOverlay
     jmp offsetOverlay
     
-    errorGetMemoryForOverlay:
+errorGetMemoryForOverlay:
     mov ah,9
     lea dx,errorAllocMemory
     int 21h
     mov ah,4ch
     int 21h
     
-    offsetOverlay:  
+offsetOverlay:  
     mov overlay_seg,ax 
     mov ax,code_seg
     mov bx,overlay_seg  
@@ -80,36 +86,37 @@ start:
     mov overlay_off,bx   
     xor ch,ch
     mov cl,strSize   
-   
+    
+    
     xor ch, ch            
 	mov cl, es:[80h]   
 	
 	mov strSize,cl 
-	dec strSize 
+	;dec strSize 
 	mov bl,strSize  
-	mov si, 82h 
+	mov si, 81h 
 	mov di, offset string      
          
-    missSpace:
+missSpace:
     cmp BYTE PTR es:[si], ' '
     jne readString
     inc si
     jmp missSpace       
 
-    errorCommand:
+errorCommandLine:
     lea dx,errorMessage
     mov ah,9
     int 21h
     mov ah,4ch
     int 21h   
                   
-    readString:    
+readString:    
     
     cmp BYTE PTR es:[si], 0Dh 
     jne  compareSymbol
     jmp checkEnd    
    
-    compareSymbol: 
+compareSymbol: 
     mov al,es:[si]
     cmp al,'+'
     je addPlus  
@@ -120,11 +127,11 @@ start:
      cmp al,'/'
     je addDiv 
     cmp al,'0'
-    jl errorCommand 
+    jl errorCommandLine 
     cmp al,'9'
-    jg errorCommand 
+    jg errorCommandLine 
     
-    readNumber:   
+readNumber:   
     mov al, es:[si]
     mov [di], al      
           
@@ -134,40 +141,40 @@ start:
     loop readString 
     jmp checkCountSign  
     
-    addPlus: 
+addPlus: 
     cmp si,82h
-    jle errorCommand  
+    jle errorCommandLine  
     call checkPreviousSymbol
     add countAdd,1  
     loop readString 
    
-    addMinus:  
+addMinus:  
     cmp si,82h
-    jle errorCommand 
+    jle errorCommandLine 
     call checkPreviousSymbol
     add countSub,1  
     loop readString 
     
-    addMul:        
+addMul:        
     cmp si,82h
-    jle errorCommand 
+    jle errorCommandLine 
     call checkPreviousSymbol
     add countMul,1 
     loop readString     
 
-    addDiv:    
+addDiv:    
     cmp si,82h
-    je errorCommandInEnd 
+    je errorCommandLine 
     call checkPreviousSymbol
     add countDiv,1   
     loop readString  
 
-    checkEnd:
+checkEnd:
     cmp BYTE PTR es:[si-1], '0'
     jl errorCommandInEnd
     jmp checkCountSign
       
-     errorCommandInEnd:
+errorCommandInEnd:
     lea dx,errorMessage
     mov ah,9
     int 21h
@@ -175,7 +182,7 @@ start:
     int 21h  
     
      
-   checkCountSign:       
+checkCountSign:       
    mov al,countDiv 
    add al,countMul
    add al,countAdd
@@ -189,7 +196,7 @@ start:
    xor si,si 
    xor ah,ah   
    
-   checkDiv: 
+checkDiv: 
 
    xor ch,ch 
    mov cl,countDiv 
@@ -197,13 +204,13 @@ start:
    jg operationDiv
    jmp  checkMul
    
-   operationDiv:
+operationDiv:
    xor di,di
    mov si,di  
    mov flagNegWrite,0
    mov beginNum, di       
    
-   doDiv:  
+doDiv:  
    
    cmp string[di],'.'
    je setbeginNumDotDiv 
@@ -218,7 +225,7 @@ start:
    cmp string[di],'+'
    je findBeginNumberDiv 
    
-   findOnlyDiv: 
+findOnlyDiv: 
    
    cmp string[di],'/'
    je findBeginNumberDiv   
@@ -230,13 +237,13 @@ start:
    inc di
    jmp doDiv   
    
-   setbeginNumDotDiv:    
+setbeginNumDotDiv:    
    
    mov posDot,di
    inc di
    jmp doDiv 
 
-  findBeginNumberDiv: 
+findBeginNumberDiv: 
   
     dec di   
     cmp string[di],'+'   
@@ -253,7 +260,8 @@ start:
     jl transferNumberDiv
    jmp findBeginNumberDiv
    
-  transferNumberDiv:  
+transferNumberDiv:    
+
   inc di   
   mov si,di
   mov beginNum,di   
@@ -267,13 +275,13 @@ start:
   call transferToNumber 
   mov ax,number
    
-   missSignAndSpacesDiv:
-   inc di 
-   cmp string[di],' '  
-   je missSignAndSpacesDiv
-   mov si,di 
+  ; missSignAndSpacesDiv:
+  inc di 
+;   cmp string[di],' '  
+;   je missSignAndSpacesDiv
+  mov si,di 
         
-   findEndNumberDiv:
+findEndNumberDiv:
   
    cmp string[di],'0'
    jl transferFractionalPartDiv  
@@ -282,7 +290,7 @@ start:
    inc di
    jmp findEndNumberDiv
                                      
-   transferFractionalPartDiv:       
+transferFractionalPartDiv:       
    
    call transferToNumber 
    mov bx,number     
@@ -296,12 +304,13 @@ start:
    jne callOverlayDiv
    jmp doDiv
    
-   callOverlayDiv:  
+callOverlayDiv:  
    cmp ax,0
    je errorDivZero
    mov flagIteration,0  
-   jmp  overlayDiv 
-   writeNewNumberInStringDiv: 
+   jmp  overlayDiv   
+   
+writeNewNumberInStringDiv: 
    
    mov si,beginExp 
    dec di  
@@ -311,14 +320,16 @@ start:
    jle checkMul
    jmp operationDiv  
  
- errorDivZero: 
+errorDivZero: 
  lea dx,errorMessage
  mov ah,9
  int 21h
  mov ah,4ch
  int 21h   
  
-checkMul:
+checkMul:   
+;call outputResult
+;call outputResult
    xor ch,ch     
    mov flagNegWrite,0
    
@@ -327,11 +338,13 @@ checkMul:
    jg operationMul
    jmp checkCycle    
    
-   operationMul:
+operationMul:     
+
    xor di,di
    mov si,di 
-   mov beginNum, di       
-   doMul:
+   mov beginNum, di    
+      
+doMul:
    cmp string[di],'.'
    je setbeginNumDotMul 
    
@@ -345,7 +358,7 @@ checkMul:
    cmp string[di],'+'
    je findBeginNumberMul  
    
-   findOnlyMul: 
+findOnlyMul: 
    cmp string[di],'*'
    je findBeginNumberMul   
    
@@ -356,12 +369,13 @@ checkMul:
    inc di
    jmp doMul  
    
-   setbeginNumDotMul:
+setbeginNumDotMul:
   
     mov posDot,di
     inc di
-    jmp doMul 
-   findBeginNumberMul:
+    jmp doMul    
+    
+findBeginNumberMul:
    
     dec di     
     cmp string[di],'+'   
@@ -376,9 +390,10 @@ checkMul:
     je  transferNumberMul
     cmp di,0
     jl  transferNumberMul 
-   jmp findBeginNumberMul
+    jmp findBeginNumberMul
    
-  transferNumberMul:  
+transferNumberMul:  
+
   inc di
   mov si,di  
   mov beginNum,di         
@@ -387,18 +402,18 @@ checkMul:
   jne notSetNewBeginMul
   mov beginExp,di        
   
-  notSetNewBeginMul:                                             
+notSetNewBeginMul:                                             
   mov di,posDot
   call transferToNumber 
   mov ax,number
    
-  missSignAndSpacesMul:
+;missSignAndSpacesMul:
    inc di      
-   cmp string[di],' '  
-   je missSignAndSpacesMul
+;   cmp string[di],' '  
+;   je missSignAndSpacesMul
    mov si,di    
     
-  findEndNumberMul:
+findEndNumberMul:
   
    cmp string[di],'0'
    jl transferFractionalPartMul    
@@ -407,7 +422,7 @@ checkMul:
    inc di
    jmp findEndNumberMul
                                      
-  transferFractionalPartMul:   
+transferFractionalPartMul:   
   
    call transferToNumber 
    mov bx,number 
@@ -420,11 +435,13 @@ checkMul:
    jne callOverlayMul
    jmp doMul
  
-    callOverlayMul: 
-    mov flagIteration,0 
-    jmp  overlayMul  
+callOverlayMul:   
 
-   writeNewNumberInStringMul:     
+   mov flagIteration,0 
+   jmp  overlayMul  
+
+writeNewNumberInStringMul:
+     
    mov si,beginExp         
    dec di
    call writeNumberInString    
@@ -436,14 +453,15 @@ checkMul:
 
     checkCycle:
     xor di,di
-    
+   ; call outputResult
     xor ch,ch
     mov cl,strSize 
     
     cycle:   
     cmp string[di],'-'
-    je operationSub  
-        
+    jne checkPlus 
+    jmp operationSub  
+    checkPlus:    
     cmp string[di],'+' 
     jne nextSymbol
     jmp operationAdd 
@@ -456,181 +474,25 @@ checkMul:
     nextSymbolCheck:      
     xor ch,ch
     mov cl,strSize
-    xor di,di    
+    xor di,di 
+    ; call outputResult   
     jmp cycle 
     
-    endProg:
+endProg:
     call outputResult
     mov ah,4ch
     int 21h           
-
-  checkSub:
-   xor ch,ch  
-   mov flagIteration,0    
-   mov flagNegWrite,0  
-   
-   mov cl,countSub 
-   cmp cl,0 
-   jg operationSub
-   jmp  checkAdd
-   
-   operationSub:
-   xor di,di
-   mov si,di 
-   mov beginNum, di 
-   mov flagNegNumber,0  
-   mov flagNegZero,0      
-   mov beginExp, di    
-    
-   doSub:     
-    cmp string[di],'.'
-   je setbeginNumDotSub
-   
-   cmp flagIteration,1
-   jne findOnlySub
-   
-   cmp string[di],'/'
-   je  findBeginNumberSub 
-   cmp string[di],'*'
-   je  findBeginNumberSub
-   cmp string[di],'+'
-   je  findBeginNumberSub
-   cmp string[di],'^'
-   je setNeg 
-   
-   findOnlySub:    
-   cmp string[di],'^'
-   je setNeg 
-   cmp string[di],'-'
-   je  findBeginNumberSub                   
-   xor ch,ch
-   mov cl,strSize
-   cmp di, cx
-   jg findBeginNumberSub   
-       
-    inc di
-    jmp doSub  
-    
-    setbeginNumDotSub:
-    
-    mov posDot,di
-    inc di  
-    jmp doSub  
-      
-    findBeginNumberSub:
-    dec di
-    cmp string[di],'+'   
-    je transferNumberSub           
-    cmp string[di],'*'
-    je transferNumberSub 
-    cmp string[di],'/'  
-    je transferNumberSub 
-    cmp string[di],'-'  
-    je transferNumberSub   
-
-    cmp string[di],' '  
-    je transferNumberSub
-    cmp di,0
-    jl transferNumberSub 
-    jmp  findBeginNumberSub
-    
-    setNeg: 
-    
-    mov flagNegNumber,1
-    mov flagNegZero,1   
-    inc di  
-    jmp doSub
-    transferNumberSub:   
-    
-    inc di          
-    cmp string[di],'^'
-    jne notNegNumSub
-    mov beginExp,di
-    inc di
-    jmp saveBeginNumberSub
-    notNegNumSub:
-    cmp flagIteration,0
-    jne   saveBeginNumberSub
-    mov beginExp,di
-    saveBeginNumberSub:
-    mov beginNum,di
-    mov si,di   
-    
-    mov di,posDot
-    call transferToNumber 
-    mov ax,number
-    
-    missSignAndSpacesSub:
-    inc di 
-    cmp string[di],' '  
-    je  missSignAndSpacesSub
-    mov si,di     
-    findEndNumberSub:
-    
-    cmp string[di],'0'
-    jl  transferFractionalPartSub   
-    cmp  di,word ptr strSize
-    jge  transferFractionalPartSub
-    inc di
-    jmp findEndNumberSub
-                                 
-    transferFractionalPartSub:
-    call transferToNumber    
-    
-    mov bx,number     
-    cmp flagNegNumber,0
-    je setbeginNumNumbersSub 
-    mov flagNegNumber,0
-    neg ax
-    setbeginNumNumbersSub:
-    push ax   
-    push bx   
-    inc di                         
-    inc flagIteration 
-    cmp flagIteration,1
-    jne  callOverlaySub  
-    jmp doSub
-    callOverlaySub: 
-    
-    mov flagIteration,0
   
-    dec di  
-     
-    xor ah,ah  
-    mov al,flagNegZero
-    mov si,ax
-    jmp  overlaySub  
-    writeNewNumberInStringSub:  
-                                                                                     
-    mov flagNegNumber,0   
-    mov flagNegZero,0 
-    cmp dx,-1 
-    je setNegNumbersSub 
-    cmp ax,0
-    jge writeNumberSub
-    setNegNumbersSub:
-    neg ax
-    mov flagNegWrite,1
-    
-    writeNumberSub:
-    mov si,beginExp      
-    call writeNumberInString         
-    jmp nextSymbolCheck         
-
-exitFromProgram: 
-   call outputResult
-   mov ah,4ch
-   int 21h
+;checkAdd:
+;   xor ch,ch     
+;   mov flagIteration,0
+;   mov cl,countAdd 
+;   cmp cl,0 
+;   jg operationAdd
+;   jmp  exitFromProgram
    
-    checkAdd:
-   xor ch,ch     
-   mov flagIteration,0
-   mov cl,countAdd 
-   cmp cl,0 
-   jg operationAdd
-   jmp  exitFromProgram
-   
-  operationAdd:
+operationAdd: 
+ ; call outputResult
     xor di,di
     mov si,di 
     mov beginNum, di 
@@ -639,49 +501,53 @@ exitFromProgram:
     mov flagNegWrite,0      
     mov beginExp, di 
     
-  doAdd: 
-   
+doAdd:  
    cmp string[di],'.'
    je setbeginNumDotAdd
     
    cmp flagIteration,1
    jne findOnlyAdd
    
-   cmp string[di],'/'
-   je findBeginNumberAdd
-   cmp string[di],'*'
-   je findBeginNumberAdd
+   ;cmp string[di],'/'
+;   je findBeginNumberAdd
+;   cmp string[di],'*'
+;   je findBeginNumberAdd
    cmp string[di],'+'
    je findBeginNumberAdd  
    cmp string[di],'-'
    je findBeginNumberAdd  
   
- findOnlyAdd:  
-    cmp string[di],'^'
-    je setNegAdd 
-    cmp string[di],'+'
-    je findBeginNumberAdd                    
-    xor ch,ch
-    mov cl,strSize
-    cmp di, cx
-    jg findBeginNumberAdd    
-    inc di
-    jmp doAdd 
+findOnlyAdd:    
+ 
+   cmp string[di],'+'
+   je findBeginNumberAdd
+         
+   cmp string[di],'^'
+   je setNegAdd 
+                  
+   xor ch,ch
+   mov cl,strSize
+   cmp di, cx
+   jg findBeginNumberAdd          
+   inc di
+   jmp doAdd 
     
-    setbeginNumDotAdd:
+setbeginNumDotAdd:
     
     mov posDot,di
     inc di  
-    jmp doAdd  
-       
-    findBeginNumberAdd :
+    jmp doAdd         
+    
+;findBeginNumberAdd1:   
+findBeginNumberAdd:      
+
     dec di              
     cmp string[di],'+'   
     je transferNumberAdd          
-    cmp string[di],'*'
-    je transferNumberAdd   
-    cmp string[di],'/'  
-    je transferNumberAdd    
+   ; cmp string[di],'*'
+;    je transferNumberAdd   
+;    cmp string[di],'/'  
+;    je transferNumberAdd    
     cmp string[di],'-'  
     je transferNumberAdd  
     cmp string[di],' '  
@@ -690,36 +556,41 @@ exitFromProgram:
     jl transferNumberAdd  
     jmp findBeginNumberAdd 
    
-    setNegAdd:  
+setNegAdd:  
+
     mov flagNegNumber,1  
     mov flagNegZero,1 
     inc di  
     jmp doAdd
     
-    transferNumberAdd:  
+transferNumberAdd:    
+
     inc di            
     cmp string[di],'^'
     jne notNegNumAdd
     mov beginExp,di
     inc di
     jmp saveBeginNumberAdd
-    notNegNumAdd:
+    
+notNegNumAdd: 
+
     cmp flagIteration,0
     jne saveBeginNumberAdd
-    mov beginExp,di
-    saveBeginNumberAdd:
+    mov beginExp,di   
+    
+saveBeginNumberAdd:
     mov beginNum,di
     mov si,di    
     mov di,posDot
     call transferToNumber 
     mov ax,number 
    
-  missSignAndSpacesAdd:
+;missSignAndSpacesAdd:
    inc di 
-   cmp string[di],' '  
-   je missSignAndSpacesAdd
+ ;  cmp string[di],' '  
+;   je missSignAndSpacesAdd
    mov si,di     
-   findEndNumberAdd:
+findEndNumberAdd:
   
    cmp string[di],'0'
    jl   transferFractionalPartAdd  
@@ -728,57 +599,234 @@ exitFromProgram:
    inc di
    jmp findEndNumberAdd 
                                      
-   transferFractionalPartAdd:
+transferFractionalPartAdd:
    call transferToNumber 
-   mov bx,number  
+   mov bx,number    
+   
    cmp flagNegNumber,0
    je setbeginNumNumbersAdd
    neg ax 
- setbeginNumNumbersAdd: 
+   
+setbeginNumNumbersAdd: 
     
    push ax 
    push bx 
     
    inc di
    inc flagIteration  
-   mov flagNegNumber,0
+   mov flagNegNumber,0 
+   
    cmp flagIteration,1
    jne callOverlayAdd   
-   jmp doAdd
-   callOverlayAdd:
+   jmp doAdd   
+   
+callOverlayAdd:
    mov flagIteration,0 
    mov flagNegNumber,0
    dec di   
    
    xor ah,ah
    mov al,flagNegZero 
-   mov si,ax
+   mov si,ax          
+   
    jmp  overlayAdd   
-   writeNewNumberInStringAdd:
+writeNewNumberInStringAdd: 
+  ; mov ah,2
+;   mov dl,'-'
+;   int 21h
    cmp dx,-1
    jne checkAx
    neg ax
    mov flagNegWrite,1 
    jmp  writeNumberAdd 
    
-   checkAx:  
+checkAx:  
    cmp ax,0
    jge writeNumberAdd
    neg ax
    mov flagNegWrite,1  
    
-   writeNumberAdd:  
+writeNumberAdd:  
  
    mov si,beginExp   
    call writeNumberInString  
+   
    mov flagNegNumber,0  
-   dec countAdd
+  ; dec countAdd
    jmp nextSymbolCheck
+   
+;checkSub:     
+;
+;   xor ch,ch  
+;   mov flagIteration,0    
+;   mov flagNegWrite,0   
+;   mov cl,countSub                 
+;   cmp cl,0 
+;   jg operationSub
+;   jmp  checkAdd
+   
+operationSub:
+   xor di,di
+   mov si,di 
+   mov beginNum, di 
+   mov flagNegNumber,0  
+   mov flagNegZero,0      
+   mov beginExp, di    
+    
+doSub: 
+       
+   cmp string[di],'.'
+   je setbeginNumDotSub
+   
+   cmp flagIteration,1
+   jne findOnlySub
+   
+   ;cmp string[di],'/'
+;   je  findBeginNumberSub 
+;   cmp string[di],'*'
+;   je  findBeginNumberSub
+   cmp string[di],'+'
+   je  findBeginNumberSub
+   cmp string[di],'^'
+   je setNeg 
+   
+findOnlySub:   
+ 
+   cmp string[di],'^'
+   je setNeg    
+   
+   cmp string[di],'-'
+   je  findBeginNumberSub                   
+   xor ch,ch
+   mov cl,strSize
+   cmp di, cx
+   jg findBeginNumberSub          
+   inc di
+   jmp doSub  
+    
+setbeginNumDotSub:
+    
+    mov posDot,di
+    inc di  
+    jmp doSub  
+      
+findBeginNumberSub:
+    dec di
+    cmp string[di],'+'   
+    je transferNumberSub           
+   ; cmp string[di],'*'
+;    je transferNumberSub 
+;    cmp string[di],'/'  
+;    je transferNumberSub 
+    cmp string[di],'-'  
+    je transferNumberSub   
+    cmp string[di],' '  
+    je transferNumberSub
+    cmp di,0
+    jl transferNumberSub 
+    jmp  findBeginNumberSub
+    
+setNeg: 
+    
+    mov flagNegNumber,1
+    mov flagNegZero,1   
+    inc di  
+    jmp doSub 
+    
+transferNumberSub:   
+    
+    inc di          
+    cmp string[di],'^'
+    jne notNegNumSub
+    mov beginExp,di
+    inc di
+    jmp saveBeginNumberSub 
+    
+notNegNumSub:
+    cmp flagIteration,0
+    jne   saveBeginNumberSub
+    mov beginExp,di
+    
+saveBeginNumberSub:
+    mov beginNum,di
+    mov si,di   
+    
+    mov di,posDot
+    call transferToNumber 
+    mov ax,number
+    
+missSignAndSpacesSub:
+    inc di 
+   ; cmp string[di],' '  
+;    je  missSignAndSpacesSub
+    mov si,di     
+findEndNumberSub:
+    
+    cmp string[di],'0'
+    jl  transferFractionalPartSub   
+    cmp  di,word ptr strSize
+    jge  transferFractionalPartSub
+    inc di
+    jmp findEndNumberSub
+                                 
+transferFractionalPartSub:  
 
-    exitFromProgrampl:  
-    call outputResult
-    mov ah,4ch
-    int 21h
+    call transferToNumber    
+    
+    mov bx,number     
+    cmp flagNegNumber,0
+    je setbeginNumNumbersSub 
+    mov flagNegNumber,0
+    neg ax           
+    
+setbeginNumNumbersSub: 
+
+    push ax   
+    push bx   
+    inc di                         
+    inc flagIteration 
+    cmp flagIteration,1
+    jne  callOverlaySub  
+    jmp doSub    
+    
+callOverlaySub: 
+    
+    mov flagIteration,0
+    dec di  
+     
+    xor ah,ah  
+    mov al,flagNegZero
+    mov si,ax  
+    jmp  overlaySub
+      
+writeNewNumberInStringSub:  
+                                                                                    
+    mov flagNegNumber,0   
+    mov flagNegZero,0 
+    cmp dx,-1 
+    je setNegNumbersSub 
+    cmp ax,0
+    jge writeNumberSub  
+    
+setNegNumbersSub:
+    neg ax
+    mov flagNegWrite,1   
+    
+writeNumberSub:
+    mov si,beginExp      
+    call writeNumberInString 
+ ;   call outputResult        
+    jmp nextSymbolCheck         
+
+exitFromProgram: 
+   call outputResult
+   mov ah,4ch
+   int 21h
+   
+   ; exitFromProgrampl:  
+;    call outputResult
+;    mov ah,4ch
+;    int 21h
 
 overlayAdd:
     
@@ -792,18 +840,22 @@ overlayAdd:
     mov ah,4bh
     mov al,3
     int 21h    
-    jc exitIfErrorLoadOverlay    
+    jc exitIfErrorLoadOverlay 
+       
     pop dx
     pop cx 
     pop bx
-    pop ax
+    pop ax                     
+    
     call DWORD PTR overlay_off 
+    
     cmp cx,-1
     je overflow    
     
     jmp writeNewNumberInStringAdd                  
                        
-overlaySub:          
+overlaySub: 
+         
     mov ax,seg block
     mov es,ax
     mov bx,offset block 
@@ -817,11 +869,14 @@ overlaySub:
     mov al,3
     int 21h        
     jc exitIfErrorLoadOverlay 
+    
     pop dx 
     pop cx  
     pop bx
-    pop ax
-    call DWORD PTR overlay_off   
+    pop ax                         
+    
+    call DWORD PTR overlay_off    
+    
     cmp cx,-1
     je overflow
     jmp writeNewNumberInStringSub
@@ -882,6 +937,7 @@ overlayDiv:
     pop bx
     pop ax 
     call DWORD PTR overlay_off 
+
     cmp cx,-1
     je overflow   
     jmp writeNewNumberInStringDiv 
@@ -902,13 +958,13 @@ transferToNumber proc
     
     mov number,0
     xor bh,bh    
-    xor ch,ch
+    xor ch,ch                            
     xor ah,ah 
     xor dx,dx
     
     mov bl,1 
     dec di
-    xor ah,ah
+   ; xor ah,ah
     transform:
     mov al,string[di]
     
@@ -918,7 +974,7 @@ transferToNumber proc
     add number,ax
     jo errorPreviousSymbol  
     mov ax,bx
-    imul k  
+    mul k  
     mov bx,ax
     dec di 
     cmp di,si
@@ -938,7 +994,7 @@ transferToNumber endp
 outputResult proc 
     mov ah,2
     xor si,si
-    xor cx,cx
+    xor ch,ch
     mov cl,strSize
     output:
     mov dl,string[si]  
@@ -971,13 +1027,16 @@ mov al,'.'
 mov [di],al
 inc di   
 mov al,'0'
+mov [di],al 
+inc di  
+mov al,'0'
 mov [di],al
 inc di      
 mov al, es:[si]
 mov [di], al            
 inc di    
 inc si  
-add strSize,2         
+add strSize,3         
 ret    
 checkPreviousSymbol endp                    
                
@@ -985,8 +1044,9 @@ writeNumberInString proc
     push bx
     push cx
     push si
-    push di
-    xor cx,cx  
+    push di  
+    
+    ;xor cx,cx  
     dec di 
     mov cx,ax
     mov ax,bx
@@ -995,31 +1055,37 @@ writeNumberInString proc
     div k     
     mov bx,ax
     add dx,'0'
-    mov al,ah
-    xor ah,ah
+   ; mov al,ah
+;    xor ah,ah
     mov string[di],dl 
-    xor ah,ah
-    mov ax,bx   
+   ; xor ah,ah
+    mov ax,bx  
+    xor dx,dx
+    div k 
+    add dx,'0'         
+    dec di
+    mov string[di],dl 
     dec di   
       
     mov al,'.'
     mov string[di],al
     dec di  
-    mov ax,cx 
+    mov ax,cx  
+    
     divNumberPart:
     xor dx,dx
     div k     
     mov bx,ax
     add dx,'0'
-    mov al,ah
-    xor ah,ah
+    ;mov al,ah
+;    xor ah,ah
     mov string[di],dl  
     add cx,1 
-    xor ah,ah
+   ; xor ah,ah
     mov ax,bx   
     dec di   
     
-    cmp bl,0
+    cmp bx,0
     je outNumbers
     jmp divNumberPart
     

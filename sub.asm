@@ -6,12 +6,17 @@ assume cs:cod
  
 jmp startSub  
 
+setOverflow_:
+mov cx,-1
+jmp exit 
+
 checkNegativeNumbers:
-sub ax,cx
+sub ax,cx   
+jo  setOverflow_
 add bx,dx 
-cmp bx,10
+cmp bx,100
 jl  exit
-sub bx,10
+sub bx,100
 dec ax
 jmp exit           
 
@@ -22,10 +27,10 @@ jne subPositiveNumbers
 mov ax,cx
 neg ax
 add bx,dx
-cmp bx,10
+cmp bx,100
 jl exit
 dec ax
-sub bx,10
+sub bx,100
 jmp exit
 
 startSub:
@@ -53,10 +58,11 @@ jmp exit
 firstFractionalMore:
 cmp ax,cx         
 jge firstNumberMore
-add dx,10
+add dx,100
 sub dx,bx   
 mov bx,dx
-sub ax,cx
+sub ax,cx 
+jo  setOverflow
 inc ax
 cmp ax,0
 jne exit
@@ -73,15 +79,17 @@ cmp ax,cx
 jg firstNumberMore_
 sub dx,bx 
 mov bx,dx
-sub ax,cx
+sub ax,cx  
+jo  setOverflow
 cmp ax,0
 jne exit
 mov dx,-1
 jmp exit
 firstNumberMore_:
-add bx,10
+add bx,100
 sub bx,dx
-sub ax,cx
+sub ax,cx  
+jo  setOverflow
 dec ax   
 cmp ax,-1
 jne exit
