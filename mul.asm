@@ -1,4 +1,4 @@
- cod segment para public 'code'
+cod segment para public 'code'
 
 overlay proc far
 
@@ -7,7 +7,7 @@ assume cs:cod
 jmp startMul 
 
 setOverflow: 
-mov cx,-1   
+mov cx,-1  
 jmp exit
 
 startMul:
@@ -15,11 +15,11 @@ startMul:
 push si
 push di  
 xor si,si
-xor di,di
+xor di,di   
+
 push ax
- 
 push dx
-mul cx 
+imul cx 
 
 jno noOverflow1
 pop ax
@@ -27,34 +27,84 @@ pop dx
 jmp setOverflow    
 
 noOverflow1: 
+                  
 pop dx   
-add si,ax  
-  
+add si,ax             
+jo setOverflow 
 pop ax           
 push ax       
 push dx 
 imul dx 
-  
-jno noOverflow2
-;pop dx  
+                                     
+jno noOverflow2     
+ 
 pop dx
 pop ax
 push ax 
-push bx
-push dx
-mov ax,dx
+push bx 
+push cx  
+push dx        
+
 xor dx,dx
 mov bx,10
-div ax,bx 
-pop dx
-pop bx  
-mov dx,ax
-pop ax
+div bx  
+mov cx,dx
+pop dx  
+push dx 
+push ax
 imul dx
 
-jmp setOverflow 
+jno notOverflow    
+pop ax
+  
+xor dx,dx
+div bx
+pop dx
+push dx
+mul dx  
+mov bx,1 
+jmp nextAfterNotOverflow 
 
-noOverflow2: 
+notOverflow: 
+pop bx
+mov bx,10 
+nextAfterNotOverflow:
+pop dx
+push dx
+xor dx,dx
+div bx
+pop dx     
+mov bx,10
+add si,ax 
+jno continueProgram
+pop cx
+pop bx
+pop ax
+jmp setOverflow  
+
+continueProgram:
+mov ax,cx  
+push dx
+mul dx 
+pop dx 
+push dx
+xor dx,dx
+div bx
+xor dx,dx
+div bx
+add si,ax 
+mov ax,dx
+mul bx
+add di,ax 
+pop dx
+pop cx
+pop bx
+pop ax
+push ax
+jmp nextOperation2 
+
+noOverflow2:  
+
 pop dx  
       
 cmp ax,100
@@ -73,16 +123,82 @@ jmp nextOperation2
 
 nextOperation1:
 add di,ax    
-
-nextOperation2:     
+ 
+nextOperation2:  
+pop ax  
 push dx
 xor dx,dx 
 mov ax,cx
-mul bx 
+imul bx 
    
 jno noOverflow3
+pop dx       
+push ax 
+push bx 
+push cx  
+push dx     
+mov ax,cx
+mov dx,bx 
+push dx   
+xor dx,dx 
+xor cx,cx
+mov bx,10
+div bx  
+mov cx,dx
+pop dx  
+push dx
+push ax
+imul dx  
+
+jno notOverflow_    
+pop ax
+  
+xor dx,dx
+div bx
+pop dx
+push dx
+mul dx  
+mov bx,1 
+jmp nextAfterNotOverflow_ 
+
+notOverflow_: 
+pop bx
+mov bx,10 
+nextAfterNotOverflow_:
+
+pop dx
+push dx
+xor dx,dx
+div bx
+pop dx  
+mov bx,10
+add si,ax  
+jo setOverflow1
+mov ax,cx  
+push dx
+mul dx 
 pop dx 
-jmp setOverflow  
+push dx
+xor dx,dx
+div bx
+xor dx,dx
+div bx
+add si,ax  
+jo setOverflow1
+mov ax,dx
+mul bx
+add di,ax 
+pop dx   
+pop dx
+pop cx
+pop bx
+pop ax
+push dx
+jmp nextOperation4  
+
+setOverflow1:
+mov cx,-1  
+jmp exit
 
 noOverflow3:               
 cmp ax,100
@@ -90,12 +206,9 @@ jl nextOperation3
 push cx
 mov cx,100
 div cx    
-;mov dx,ax  
-;mov ah,2
-;add dx,'-'
-;int 21h 
 pop cx
-add si,ax  
+adc si,ax   
+jo setOverflow1
 add di,dx
 jmp nextOperation4        
 
@@ -106,12 +219,10 @@ nextOperation4:
 mov ax,bx    
 pop dx  
 mul dx     
-;mov dx,ax  
-;mov ah,2
-;add dx,'0'
-;int 21h 
-jo setOverflow 
+jno notOverflow4  
+jmp setOverflow 
 
+notOverflow4:
 xor dx,dx
 push cx
 mov cx,100
@@ -120,17 +231,18 @@ pop cx
 
 add di,ax   
 mov ax,si
-cmp di,100      
+cmp di,100                   
 jl less100
 inc ax   
 mov bx,di
-sub bx,100
+sub bx,100 
+
 less100: 
-mov bx,di  
+mov bx,di                               
    
 exit:
 pop di
-pop si
+pop si 
 retf
 overlay endp  
 

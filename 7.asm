@@ -30,7 +30,7 @@ errorMessage db "Error commmand line argument$"
 errorChangeMemory db "error change memory$"  
 errorAllocMemory db "error alloc memory$"
 overflowMessage db "overflow$"   
-resultMessage db "result$"
+resultMessage db "Result: $"
 
 number dw ?
 countMul db ?  
@@ -92,7 +92,6 @@ offsetOverlay:
 	mov cl, es:[80h]   
 	
 	mov strSize,cl 
-	;dec strSize 
 	mov bl,strSize  
 	mov si, 81h 
 	mov di, offset string      
@@ -275,10 +274,9 @@ transferNumberDiv:
   call transferToNumber 
   mov ax,number
    
-  ; missSignAndSpacesDiv:
+ 
   inc di 
-;   cmp string[di],' '  
-;   je missSignAndSpacesDiv
+
   mov si,di 
         
 findEndNumberDiv:
@@ -328,8 +326,7 @@ errorDivZero:
  int 21h   
  
 checkMul:   
-;call outputResult
-;call outputResult
+
    xor ch,ch     
    mov flagNegWrite,0
    
@@ -407,10 +404,8 @@ notSetNewBeginMul:
   call transferToNumber 
   mov ax,number
    
-;missSignAndSpacesMul:
+
    inc di      
-;   cmp string[di],' '  
-;   je missSignAndSpacesMul
    mov si,di    
     
 findEndNumberMul:
@@ -453,7 +448,6 @@ writeNewNumberInStringMul:
 
     checkCycle:
     xor di,di
-   ; call outputResult
     xor ch,ch
     mov cl,strSize 
     
@@ -474,25 +468,18 @@ writeNewNumberInStringMul:
     nextSymbolCheck:      
     xor ch,ch
     mov cl,strSize
-    xor di,di 
-    ; call outputResult   
+    xor di,di   
     jmp cycle 
     
 endProg:
+    mov ah,9
+    lea dx,resultMessage
+    int 21h
     call outputResult
     mov ah,4ch
     int 21h           
-  
-;checkAdd:
-;   xor ch,ch     
-;   mov flagIteration,0
-;   mov cl,countAdd 
-;   cmp cl,0 
-;   jg operationAdd
-;   jmp  exitFromProgram
    
 operationAdd: 
- ; call outputResult
     xor di,di
     mov si,di 
     mov beginNum, di 
@@ -508,10 +495,6 @@ doAdd:
    cmp flagIteration,1
    jne findOnlyAdd
    
-   ;cmp string[di],'/'
-;   je findBeginNumberAdd
-;   cmp string[di],'*'
-;   je findBeginNumberAdd
    cmp string[di],'+'
    je findBeginNumberAdd  
    cmp string[di],'-'
@@ -537,17 +520,13 @@ setbeginNumDotAdd:
     mov posDot,di
     inc di  
     jmp doAdd         
-    
-;findBeginNumberAdd1:   
+      
 findBeginNumberAdd:      
 
     dec di              
     cmp string[di],'+'   
     je transferNumberAdd          
-   ; cmp string[di],'*'
-;    je transferNumberAdd   
-;    cmp string[di],'/'  
-;    je transferNumberAdd    
+   
     cmp string[di],'-'  
     je transferNumberAdd  
     cmp string[di],' '  
@@ -585,10 +564,7 @@ saveBeginNumberAdd:
     call transferToNumber 
     mov ax,number 
    
-;missSignAndSpacesAdd:
    inc di 
- ;  cmp string[di],' '  
-;   je missSignAndSpacesAdd
    mov si,di     
 findEndNumberAdd:
   
@@ -631,9 +607,7 @@ callOverlayAdd:
    
    jmp  overlayAdd   
 writeNewNumberInStringAdd: 
-  ; mov ah,2
-;   mov dl,'-'
-;   int 21h
+
    cmp dx,-1
    jne checkAx
    neg ax
@@ -652,18 +626,8 @@ writeNumberAdd:
    call writeNumberInString  
    
    mov flagNegNumber,0  
-  ; dec countAdd
    jmp nextSymbolCheck
    
-;checkSub:     
-;
-;   xor ch,ch  
-;   mov flagIteration,0    
-;   mov flagNegWrite,0   
-;   mov cl,countSub                 
-;   cmp cl,0 
-;   jg operationSub
-;   jmp  checkAdd
    
 operationSub:
    xor di,di
@@ -681,10 +645,6 @@ doSub:
    cmp flagIteration,1
    jne findOnlySub
    
-   ;cmp string[di],'/'
-;   je  findBeginNumberSub 
-;   cmp string[di],'*'
-;   je  findBeginNumberSub
    cmp string[di],'+'
    je  findBeginNumberSub
    cmp string[di],'^'
@@ -713,11 +673,7 @@ setbeginNumDotSub:
 findBeginNumberSub:
     dec di
     cmp string[di],'+'   
-    je transferNumberSub           
-   ; cmp string[di],'*'
-;    je transferNumberSub 
-;    cmp string[di],'/'  
-;    je transferNumberSub 
+    je transferNumberSub            
     cmp string[di],'-'  
     je transferNumberSub   
     cmp string[di],' '  
@@ -755,10 +711,8 @@ saveBeginNumberSub:
     call transferToNumber 
     mov ax,number
     
-missSignAndSpacesSub:
+
     inc di 
-   ; cmp string[di],' '  
-;    je  missSignAndSpacesSub
     mov si,di     
 findEndNumberSub:
     
@@ -814,19 +768,9 @@ setNegNumbersSub:
     
 writeNumberSub:
     mov si,beginExp      
-    call writeNumberInString 
- ;   call outputResult        
+    call writeNumberInString        
     jmp nextSymbolCheck         
 
-exitFromProgram: 
-   call outputResult
-   mov ah,4ch
-   int 21h
-   
-   ; exitFromProgrampl:  
-;    call outputResult
-;    mov ah,4ch
-;    int 21h
 
 overlayAdd:
     
@@ -964,7 +908,6 @@ transferToNumber proc
     
     mov bl,1 
     dec di
-   ; xor ah,ah
     transform:
     mov al,string[di]
     
@@ -1045,8 +988,7 @@ writeNumberInString proc
     push cx
     push si
     push di  
-    
-    ;xor cx,cx  
+     
     dec di 
     mov cx,ax
     mov ax,bx
@@ -1055,10 +997,8 @@ writeNumberInString proc
     div k     
     mov bx,ax
     add dx,'0'
-   ; mov al,ah
-;    xor ah,ah
+
     mov string[di],dl 
-   ; xor ah,ah
     mov ax,bx  
     xor dx,dx
     div k 
@@ -1077,11 +1017,10 @@ writeNumberInString proc
     div k     
     mov bx,ax
     add dx,'0'
-    ;mov al,ah
-;    xor ah,ah
+
     mov string[di],dl  
     add cx,1 
-   ; xor ah,ah
+
     mov ax,bx   
     dec di   
     
