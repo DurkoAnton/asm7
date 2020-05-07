@@ -27,9 +27,9 @@ pathToTheMul db "mul.exe",0
 pathToTheDiv db "div.exe",0    
 
 errorMessage db "Error commmand line argument$" 
-errorChangeMemory db "error change memory$"  
-errorAllocMemory db "error alloc memory$"
-overflowMessage db "overflow$"   
+errorChangeMemory db "Error change memory$"  
+errorAllocMemory db "Error alloc memory$"
+overflowMessage db "Overflow$"   
 resultMessage db "Result: $"
 
 number dw ?
